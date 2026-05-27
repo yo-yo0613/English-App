@@ -10,7 +10,6 @@ import {
   endOfWeek, 
   eachDayOfInterval, 
   isSameMonth, 
-  isSameDay, 
   isToday 
 } from 'date-fns';
 import { X, ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
