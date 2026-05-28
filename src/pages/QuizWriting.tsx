@@ -6,7 +6,7 @@ import { Check, X } from 'lucide-react';
 import { pickRandomWordWeighted } from '../utils/algorithms';
 
 const QuizWriting: React.FC = () => {
-  const { incrementScore, markWordAsLearned, wordsLearned } = useProgress();
+  const { incrementScore, markWordAsLearned, wordsLearned, selectedCategory = 'General' } = useProgress();
   const [currentWord, setCurrentWord] = useState<WordItem | null>(null);
   const [input, setInput] = useState('');
   const [status, setStatus] = useState<'idle' | 'correct' | 'incorrect'>('idle');
@@ -15,7 +15,13 @@ const QuizWriting: React.FC = () => {
   const generateQuiz = () => {
     setStatus('idle');
     setInput('');
-    const target = pickRandomWordWeighted(defaultWordList, wordsLearned);
+    
+    const wordsSource = selectedCategory === 'General' || selectedCategory === 'All' 
+      ? defaultWordList 
+      : defaultWordList.filter(w => w.category === selectedCategory);
+    
+    const activeWordList = wordsSource.length > 0 ? wordsSource : defaultWordList;
+    const target = pickRandomWordWeighted(activeWordList, wordsLearned);
     setCurrentWord(target);
     setTimeout(() => {
       inputRef.current?.focus();

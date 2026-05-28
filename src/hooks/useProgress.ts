@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabaseClient';
 export interface ProgressState {
   score: number;
   wordsLearned: string[];
+  selectedCategory: string;
   
   // Daily goals
   dailyGoal: number;
@@ -13,6 +14,8 @@ export interface ProgressState {
     speaking: number;
     reading: number;
     writing: number;
+    flashcards: number;
+    sentence: number;
     lastUpdated: string;
   };
   
@@ -25,10 +28,11 @@ export interface ProgressState {
 
   // Actions
   incrementScore: (points: number) => void;
-  markWordAsLearned: (wordId: string, type: 'listening' | 'speaking' | 'reading' | 'writing') => void;
+  markWordAsLearned: (wordId: string, type: 'listening' | 'speaking' | 'reading' | 'writing' | 'flashcards' | 'sentence') => void;
   setDailyGoal: (goal: number) => void;
   setNotificationTime: (time: string) => void;
   setTheme: (theme: 'light' | 'dark') => void;
+  setSelectedCategory: (category: string) => void;
   resetProgress: () => void;
   syncWithSupabase: (userId: string) => Promise<void>;
 }
@@ -40,12 +44,15 @@ export const useProgress = create<ProgressState>()(
     (set, get) => ({
       score: 0,
       wordsLearned: [],
+      selectedCategory: 'General',
       dailyGoal: 200,
       dailyProgress: {
         listening: 0,
         speaking: 0,
         reading: 0,
         writing: 0,
+        flashcards: 0,
+        sentence: 0,
         lastUpdated: getTodayDateString(),
       },
       history: {},
@@ -66,10 +73,20 @@ export const useProgress = create<ProgressState>()(
           speaking: 0,
           reading: 0,
           writing: 0,
+          flashcards: 0,
+          sentence: 0,
           lastUpdated: today,
-        } : { ...state.dailyProgress };
+        } : { 
+          listening: state.dailyProgress.listening || 0,
+          speaking: state.dailyProgress.speaking || 0,
+          reading: state.dailyProgress.reading || 0,
+          writing: state.dailyProgress.writing || 0,
+          flashcards: state.dailyProgress.flashcards || 0,
+          sentence: state.dailyProgress.sentence || 0,
+          lastUpdated: state.dailyProgress.lastUpdated || today,
+        };
 
-        newDailyProgress[type] += 1;
+        newDailyProgress[type] = (newDailyProgress[type] || 0) + 1;
 
         const newWordsLearned = state.wordsLearned.includes(wordId) 
           ? state.wordsLearned 
@@ -89,11 +106,13 @@ export const useProgress = create<ProgressState>()(
       setDailyGoal: (goal) => set({ dailyGoal: goal }),
       setNotificationTime: (time) => set({ notificationTime: time }),
       setTheme: (theme) => set({ theme }),
+      setSelectedCategory: (category) => set({ selectedCategory: category }),
       resetProgress: () => set({ 
         score: 0, 
         wordsLearned: [], 
+        selectedCategory: 'General',
         dailyProgress: {
-          listening: 0, speaking: 0, reading: 0, writing: 0, lastUpdated: getTodayDateString()
+          listening: 0, speaking: 0, reading: 0, writing: 0, flashcards: 0, sentence: 0, lastUpdated: getTodayDateString()
         },
         history: {}
       }),

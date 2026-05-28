@@ -5,7 +5,7 @@ import { useProgress } from '../hooks/useProgress';
 import { shuffleArray, pickRandomWordWeighted } from '../utils/algorithms';
 
 const QuizSentence: React.FC = () => {
-  const { incrementScore, markWordAsLearned, wordsLearned } = useProgress();
+  const { incrementScore, markWordAsLearned, wordsLearned, selectedCategory = 'General' } = useProgress();
   const [currentWord, setCurrentWord] = useState<WordItem | null>(null);
   const [options, setOptions] = useState<string[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<'idle' | 'correct' | 'incorrect'>('idle');
@@ -13,7 +13,13 @@ const QuizSentence: React.FC = () => {
 
   const generateQuiz = () => {
     setSelectedStatus('idle');
-    const target = pickRandomWordWeighted(defaultWordList.filter(w => w.example), wordsLearned);
+    
+    const wordsSource = selectedCategory === 'General' || selectedCategory === 'All' 
+      ? defaultWordList 
+      : defaultWordList.filter(w => w.category === selectedCategory);
+    
+    const activeWordList = wordsSource.length > 0 ? wordsSource : defaultWordList;
+    const target = pickRandomWordWeighted(activeWordList.filter(w => w.example), wordsLearned);
     setCurrentWord(target);
     
     // Split the example sentence around the word (case insensitive)
@@ -27,7 +33,7 @@ const QuizSentence: React.FC = () => {
     }
 
     // Pick 3 random wrong options
-    const wrongOptions = shuffleArray(defaultWordList.filter(w => w.id !== target.id)).slice(0, 3).map(w => w.word);
+    const wrongOptions = shuffleArray(activeWordList.filter(w => w.id !== target.id)).slice(0, 3).map(w => w.word);
     const allOptions = shuffleArray([...wrongOptions, target.word]);
     setOptions(allOptions);
   };
@@ -42,8 +48,8 @@ const QuizSentence: React.FC = () => {
     if (option === currentWord.word) {
       setSelectedStatus('correct');
       incrementScore(30);
-      // We categorize this under 'reading' for progress tracking
-      markWordAsLearned(currentWord.id, 'reading');
+      // We categorize this under 'sentence' for progress tracking
+      markWordAsLearned(currentWord.id, 'sentence');
       setTimeout(generateQuiz, 2000);
     } else {
       setSelectedStatus('incorrect');

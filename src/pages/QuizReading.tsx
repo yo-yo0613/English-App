@@ -6,18 +6,24 @@ import { useProgress } from '../hooks/useProgress';
 import { shuffleArray, pickRandomWordWeighted } from '../utils/algorithms';
 
 const QuizReading: React.FC = () => {
-  const { incrementScore, markWordAsLearned, wordsLearned, theme, score } = useProgress();
+  const { incrementScore, markWordAsLearned, wordsLearned, theme, score, selectedCategory = 'General' } = useProgress();
   const [currentWord, setCurrentWord] = useState<WordItem | null>(null);
   const [options, setOptions] = useState<WordItem[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<'idle' | 'correct' | 'incorrect'>('idle');
 
   const generateQuiz = () => {
     setSelectedStatus('idle');
-    const target = pickRandomWordWeighted(defaultWordList, wordsLearned);
+    
+    const wordsSource = selectedCategory === 'General' || selectedCategory === 'All' 
+      ? defaultWordList 
+      : defaultWordList.filter(w => w.category === selectedCategory);
+    
+    const activeWordList = wordsSource.length > 0 ? wordsSource : defaultWordList;
+    const target = pickRandomWordWeighted(activeWordList, wordsLearned);
     setCurrentWord(target);
     
     // Pick 3 random wrong options using Fisher-Yates shuffle
-    const wrongOptions = shuffleArray(defaultWordList.filter(w => w.id !== target.id)).slice(0, 3);
+    const wrongOptions = shuffleArray(activeWordList.filter(w => w.id !== target.id)).slice(0, 3);
     const allOptions = shuffleArray([...wrongOptions, target]);
     setOptions(allOptions);
   };

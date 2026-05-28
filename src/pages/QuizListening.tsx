@@ -7,7 +7,7 @@ import { Volume2, Loader } from 'lucide-react';
 import { shuffleArray, pickRandomWordWeighted } from '../utils/algorithms';
 
 const QuizListening: React.FC = () => {
-  const { incrementScore, markWordAsLearned, wordsLearned } = useProgress();
+  const { incrementScore, markWordAsLearned, wordsLearned, selectedCategory = 'General' } = useProgress();
   const [currentWord, setCurrentWord] = useState<WordItem | null>(null);
   const [options, setOptions] = useState<WordItem[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<'idle' | 'correct' | 'incorrect'>('idle');
@@ -19,7 +19,12 @@ const QuizListening: React.FC = () => {
     setAudioUrl(null);
     setLoadingAudio(true);
 
-    const target = pickRandomWordWeighted(defaultWordList, wordsLearned);
+    const wordsSource = selectedCategory === 'General' || selectedCategory === 'All' 
+      ? defaultWordList 
+      : defaultWordList.filter(w => w.category === selectedCategory);
+    
+    const activeWordList = wordsSource.length > 0 ? wordsSource : defaultWordList;
+    const target = pickRandomWordWeighted(activeWordList, wordsLearned);
     setCurrentWord(target);
     
     // Fetch audio from Dictionary API
@@ -33,7 +38,7 @@ const QuizListening: React.FC = () => {
     setLoadingAudio(false);
 
     // Pick 3 random wrong options using Fisher-Yates
-    const wrongOptions = shuffleArray(defaultWordList.filter(w => w.id !== target.id)).slice(0, 3);
+    const wrongOptions = shuffleArray(activeWordList.filter(w => w.id !== target.id)).slice(0, 3);
     const allOptions = shuffleArray([...wrongOptions, target]);
     setOptions(allOptions);
 

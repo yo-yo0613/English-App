@@ -14,7 +14,7 @@ declare global {
 }
 
 const QuizSpeaking: React.FC = () => {
-  const { incrementScore, markWordAsLearned, wordsLearned } = useProgress();
+  const { incrementScore, markWordAsLearned, wordsLearned, selectedCategory = 'General' } = useProgress();
   const [currentWord, setCurrentWord] = useState<WordItem | null>(null);
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
@@ -27,7 +27,13 @@ const QuizSpeaking: React.FC = () => {
     setStatus('idle');
     setTranscript('');
     setError('');
-    const target = pickRandomWordWeighted(defaultWordList, wordsLearned);
+    
+    const wordsSource = selectedCategory === 'General' || selectedCategory === 'All' 
+      ? defaultWordList 
+      : defaultWordList.filter(w => w.category === selectedCategory);
+    
+    const activeWordList = wordsSource.length > 0 ? wordsSource : defaultWordList;
+    const target = pickRandomWordWeighted(activeWordList, wordsLearned);
     setCurrentWord(target);
   };
 

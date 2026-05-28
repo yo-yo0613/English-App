@@ -6,14 +6,26 @@ import { fetchWordData } from '../services/dictionaryApi';
 import { Volume2, ArrowRight, ArrowLeft, RefreshCw, VolumeX } from 'lucide-react';
 
 const Flashcards: React.FC = () => {
-  const { theme, markWordAsLearned } = useProgress();
+  const { theme, markWordAsLearned, selectedCategory = 'General' } = useProgress();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const word = defaultWordList[currentIndex];
+  const filteredWords = React.useMemo(() => {
+    if (selectedCategory === 'General' || selectedCategory === 'All') {
+      return defaultWordList;
+    }
+    const filtered = defaultWordList.filter(w => w.category === selectedCategory);
+    return filtered.length > 0 ? filtered : defaultWordList;
+  }, [selectedCategory]);
+
+  useEffect(() => {
+    setCurrentIndex(0);
+  }, [selectedCategory]);
+
+  const word = filteredWords[currentIndex] || filteredWords[0] || defaultWordList[0];
 
   useEffect(() => {
     // Reset state when word changes
@@ -47,12 +59,13 @@ const Flashcards: React.FC = () => {
   };
 
   const handleNext = () => {
-    if (isFlipped) markWordAsLearned(word.id, 'reading'); // Count as learning if they saw the back
-    setCurrentIndex((prev) => (prev + 1) % defaultWordList.length);
+    // Mark word as learned under flashcards progress
+    markWordAsLearned(word.id, 'flashcards');
+    setCurrentIndex((prev) => (prev + 1) % filteredWords.length);
   };
 
   const handlePrev = () => {
-    setCurrentIndex((prev) => (prev - 1 + defaultWordList.length) % defaultWordList.length);
+    setCurrentIndex((prev) => (prev - 1 + filteredWords.length) % filteredWords.length);
   };
 
   const getTagColor = (category: string) => {
@@ -68,7 +81,7 @@ const Flashcards: React.FC = () => {
       <div className="w-full flex justify-between items-center mb-2 px-4">
         <h1 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Flashcards</h1>
         <span className={`text-sm font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
-          {currentIndex + 1} / {defaultWordList.length}
+          {currentIndex + 1} / {filteredWords.length}
         </span>
       </div>
 
