@@ -8,10 +8,11 @@ const Home: React.FC = () => {
   const { score, dailyGoal, dailyProgress } = useProgress();
 
   const features = [
-    { name: '看單字 (Reading)', path: '/reading', icon: BookOpen, color: 'bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400', progress: dailyProgress.reading },
+    { name: '背單字 (Flashcards)', path: '/flashcards', icon: BookOpen, color: 'bg-rose-100 text-rose-600 dark:bg-rose-900/50 dark:text-rose-400', progress: 0 },
+    { name: '讀單字 (Reading)', path: '/reading', icon: BookOpen, color: 'bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400', progress: dailyProgress.reading },
     { name: '聽單字 (Listening)', path: '/listening', icon: Headphones, color: 'bg-purple-100 text-purple-600 dark:bg-purple-900/50 dark:text-purple-400', progress: dailyProgress.listening },
     { name: '說單字 (Speaking)', path: '/speaking', icon: Mic, color: 'bg-green-100 text-green-600 dark:bg-green-900/50 dark:text-green-400', progress: dailyProgress.speaking },
-    { name: '拼寫單字 (Writing)', path: '/writing', icon: Edit3, color: 'bg-orange-100 text-orange-600 dark:bg-orange-900/50 dark:text-orange-400', progress: dailyProgress.writing },
+    { name: '寫單字 (Writing)', path: '/writing', icon: Edit3, color: 'bg-orange-100 text-orange-600 dark:bg-orange-900/50 dark:text-orange-400', progress: dailyProgress.writing },
     { name: '配對句子 (Sentence)', path: '/sentence', icon: Type, color: 'bg-teal-100 text-teal-600 dark:bg-teal-900/50 dark:text-teal-400', progress: 0 },
   ];
 

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useProgress } from '../hooks/useProgress';
-import { Moon, Sun, Bell, Target, Share2, X, Download } from 'lucide-react';
+import { Bell, Target, Moon, Sun, Download, Share2, Trash2, LogOut, X } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 
 const Settings: React.FC = () => {
@@ -53,8 +53,30 @@ const Settings: React.FC = () => {
         </div>
       </div>
 
-      {/* Daily Goal */}
+      {/* Supabase Account & Data Sync */}
       <div className="glass-panel p-5 dark:bg-slate-800/80 dark:border-slate-700">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-2 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-lg">
+            <LogOut size={20} />
+          </div>
+          <h2 className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>Account</h2>
+        </div>
+        
+        <div className="flex flex-col gap-3">
+          <button 
+            onClick={async () => {
+              const { useAuth } = await import('../hooks/useAuth');
+              await useAuth.getState().signOut();
+            }}
+            className="w-full py-3 bg-red-100 hover:bg-red-200 text-red-600 dark:bg-red-900/30 dark:hover:bg-red-900/50 dark:text-red-400 rounded-xl font-medium transition-colors"
+          >
+            Sign Out
+          </button>
+        </div>
+      </div>
+
+      {/* Danger Zone */}
+      <div className="glass-panel p-5 border-red-100 dark:border-red-900/30">
         <div className="flex items-center gap-3 text-slate-700 dark:text-slate-200 mb-4">
           <Target size={24} />
           <span className="font-semibold">Daily Vocabulary Goal</span>

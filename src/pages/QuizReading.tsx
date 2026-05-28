@@ -42,18 +42,38 @@ const QuizReading: React.FC = () => {
 
   if (!currentWord) return null;
 
+  const getTagColor = (category: string) => {
+    if (category.includes('GEPT')) return theme === 'dark' ? 'bg-blue-900/40 text-blue-400' : 'bg-blue-100 text-blue-600';
+    if (category.includes('TOEIC')) return theme === 'dark' ? 'bg-orange-900/40 text-orange-400' : 'bg-orange-100 text-orange-600';
+    if (category.includes('TOEFL')) return theme === 'dark' ? 'bg-purple-900/40 text-purple-400' : 'bg-purple-100 text-purple-600';
+    if (category.includes('Business')) return theme === 'dark' ? 'bg-emerald-900/40 text-emerald-400' : 'bg-emerald-100 text-emerald-600';
+    return theme === 'dark' ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-600';
+  };
+
   return (
-    <div className="py-8 flex flex-col items-center h-full max-w-md mx-auto">
-      <h2 className="text-xl font-bold text-slate-700 mb-8">看單字 (Reading)</h2>
-      
-      <motion.div 
-        key={currentWord.id}
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        className="glass-panel w-full p-10 flex items-center justify-center mb-8 bg-gradient-to-br from-blue-500 to-indigo-600 shadow-blue-500/30"
-      >
-        <span className="text-5xl font-black text-white tracking-wider">{currentWord.word}</span>
-      </motion.div>
+    <div className="py-6 flex flex-col gap-6 max-w-md mx-auto h-full">
+      <div className="flex justify-between items-center px-2">
+        <h1 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>Reading Quiz</h1>
+        <div className={`text-sm font-medium ${theme === 'dark' ? 'text-indigo-400' : 'text-indigo-600'}`}>
+          Score: {score}
+        </div>
+      </div>
+
+      <div className="flex-1 flex flex-col justify-center">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentWord.id}
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: -20 }}
+            className={`w-full aspect-square rounded-3xl p-8 flex flex-col items-center justify-center mb-8 border shadow-xl relative ${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}
+          >
+            <span className={`absolute top-6 left-6 px-3 py-1 rounded-full text-xs font-bold ${getTagColor(currentWord.category)}`}>
+              {currentWord.category}
+            </span>
+            <h2 className={`text-5xl font-black mb-4 ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>{currentWord.word}</h2>
+          </motion.div>
+        </AnimatePresence>
 
       <div className="grid grid-cols-2 gap-4 w-full">
         <AnimatePresence mode="popLayout">
@@ -77,15 +97,16 @@ const QuizReading: React.FC = () => {
         </AnimatePresence>
       </div>
 
-      {selectedStatus === 'correct' && (
-        <motion.div 
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          className="mt-8 text-green-600 font-bold text-xl"
-        >
-          Excellent! 🎉
-        </motion.div>
-      )}
+        {selectedStatus === 'correct' && (
+          <motion.div 
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="mt-8 text-green-600 font-bold text-xl text-center"
+          >
+            Excellent! 🎉
+          </motion.div>
+        )}
+      </div>
     </div>
   );
 };
