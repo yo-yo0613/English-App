@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useProgress } from '../hooks/useProgress';
-import { Bell, Target, Moon, Sun, Download, Share2, Trash2, LogOut, X } from 'lucide-react';
+import { Bell, Target, Moon, Sun, Download, Share2, LogOut, X } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 
 const Settings: React.FC = () => {

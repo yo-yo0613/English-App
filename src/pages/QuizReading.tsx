@@ -6,7 +6,7 @@ import { useProgress } from '../hooks/useProgress';
 import { shuffleArray, pickRandomWordWeighted } from '../utils/algorithms';
 
 const QuizReading: React.FC = () => {
-  const { incrementScore, markWordAsLearned, wordsLearned } = useProgress();
+  const { incrementScore, markWordAsLearned, wordsLearned, theme, score } = useProgress();
   const [currentWord, setCurrentWord] = useState<WordItem | null>(null);
   const [options, setOptions] = useState<WordItem[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<'idle' | 'correct' | 'incorrect'>('idle');
