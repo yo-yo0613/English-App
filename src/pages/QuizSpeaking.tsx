@@ -57,10 +57,18 @@ const QuizSpeaking: React.FC = () => {
       recognition.onerror = (event: any) => {
         console.error('Speech recognition error', event.error);
         setIsListening(false);
+        
+        // Silent ignore for 'aborted' error which is triggered when manually stopping or on standard mobile sleep/timeout
+        if (event.error === 'aborted') {
+          return;
+        }
+        
         if (event.error === 'not-allowed') {
-          setError('Microphone access denied. Please allow microphone access.');
+          setError('Microphone access denied. Please allow microphone access in your browser settings.');
+        } else if (event.error === 'no-speech') {
+          setError('No speech detected. Please speak clearly and closer to the microphone.');
         } else {
-          setError(`Error: ${event.error}`);
+          setError(`Speech recognition error: ${event.error}. Please try again.`);
         }
       };
 
@@ -70,7 +78,7 @@ const QuizSpeaking: React.FC = () => {
 
       recognitionRef.current = recognition;
     } else {
-      setError('Speech recognition is not supported in this browser. Try Chrome.');
+      setError('Speech recognition is not supported in this browser. Try Chrome or Safari.');
     }
 
     return () => {
@@ -102,18 +110,24 @@ const QuizSpeaking: React.FC = () => {
   };
 
   const toggleListening = () => {
+    setError(''); // Clear error on retry
     if (isListening) {
       recognitionRef.current?.stop();
     } else {
-      recognitionRef.current?.start();
+      try {
+        recognitionRef.current?.start();
+      } catch (e: any) {
+        console.error(e);
+        setError('Failed to start speech recognition. Please try again.');
+      }
     }
   };
 
   if (!currentWord) return null;
 
   return (
-    <div className="py-8 flex flex-col items-center h-full max-w-md mx-auto">
-      <h2 className="text-xl font-bold text-slate-700 mb-8">說單字 (Speaking)</h2>
+    <div className="py-8 flex flex-col items-center h-full max-w-md mx-auto px-4">
+      <h2 className="text-xl font-bold text-slate-700 dark:text-slate-200 mb-8">說單字 (Speaking)</h2>
       
       <motion.div 
         key={currentWord.id}
@@ -125,31 +139,35 @@ const QuizSpeaking: React.FC = () => {
         <span className="text-lg opacity-80">{currentWord.translation}</span>
       </motion.div>
 
-      {error ? (
-        <div className="flex items-center gap-2 text-red-500 bg-red-50 p-4 rounded-xl w-full border border-red-200">
-          <AlertCircle size={20} />
-          <span className="text-sm">{error}</span>
-        </div>
-      ) : (
-        <div className="flex flex-col items-center w-full">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={toggleListening}
-            className={`w-24 h-24 rounded-full flex items-center justify-center shadow-xl transition-all ${
-              isListening 
-                ? 'bg-red-500 text-white animate-pulse shadow-red-500/50' 
-                : 'bg-white text-emerald-500 border-2 border-emerald-100 hover:border-emerald-300'
-            }`}
+      <div className="flex flex-col items-center w-full gap-4 mb-6">
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={toggleListening}
+          className={`w-24 h-24 rounded-full flex items-center justify-center shadow-xl transition-all ${
+            isListening 
+              ? 'bg-red-500 text-white animate-pulse shadow-red-500/50' 
+              : 'bg-white text-emerald-500 border-2 border-emerald-100 hover:border-emerald-300 dark:bg-slate-800 dark:border-slate-700 dark:text-emerald-400'
+          }`}
+        >
+          {isListening ? <MicOff size={40} /> : <Mic size={40} />}
+        </motion.button>
+        
+        <p className="text-slate-500 dark:text-slate-400 font-medium">
+          {isListening ? 'Listening... Speak now!' : 'Tap the microphone and speak'}
+        </p>
+
+        {error && (
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center gap-2 text-red-500 bg-red-50 dark:bg-red-950/30 dark:border-red-900/50 p-4 rounded-xl w-full border border-red-200 mt-2"
           >
-            {isListening ? <MicOff size={40} /> : <Mic size={40} />}
-          </motion.button>
-          
-          <p className="mt-4 text-slate-500 font-medium">
-            {isListening ? 'Listening... Speak now!' : 'Tap the microphone and speak'}
-          </p>
-        </div>
-      )}
+            <AlertCircle size={20} className="shrink-0" />
+            <span className="text-sm text-left leading-relaxed">{error}</span>
+          </motion.div>
+        )}
+      </div>
 
       {transcript && (
         <motion.div 
