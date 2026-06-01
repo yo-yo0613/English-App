@@ -176,10 +176,10 @@ const QuizWriting: React.FC = () => {
             placeholder="Type the word here..."
             className={`w-full p-5 rounded-2xl text-2xl text-center font-bold outline-none transition-all ${
               status === 'correct'
-                ? 'bg-green-50 border-2 border-green-500 text-green-700'
+                ? 'bg-green-50 border-2 border-green-500 text-green-700 dark:bg-green-950/30 dark:border-green-500 dark:text-green-400'
                 : status === 'incorrect'
-                ? 'bg-red-50 border-2 border-red-500 text-red-700'
-                : 'bg-white border-2 border-slate-200 focus:border-orange-500 text-slate-800 shadow-md dark:bg-slate-850 dark:border-slate-700 dark:text-white dark:focus:border-orange-500'
+                ? 'bg-red-50 border-2 border-red-500 text-red-700 dark:bg-red-950/30 dark:border-red-500 dark:text-red-400'
+                : 'bg-white border-2 border-slate-200 focus:border-orange-500 text-slate-800 shadow-md dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:focus:border-orange-500'
             }`}
           />
           <AnimatePresence>
