@@ -3,7 +3,7 @@ import { motion, } from 'framer-motion';
 import { useProgress } from '../hooks/useProgress';
 import { defaultWordList } from '../data/wordList';
 import { fetchWordData } from '../services/dictionaryApi';
-import { Volume2, ArrowRight, ArrowLeft, RefreshCw, VolumeX } from 'lucide-react';
+import { Volume2, ArrowRight, ArrowLeft, RefreshCw } from 'lucide-react';
 
 const Flashcards: React.FC = () => {
   const { theme, markWordAsLearned, selectedCategory = 'General' } = useProgress();
@@ -27,6 +27,15 @@ const Flashcards: React.FC = () => {
 
   const word = filteredWords[currentIndex] || filteredWords[0] || defaultWordList[0];
 
+  const playSpeechSynthesis = (text: string) => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US';
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
   useEffect(() => {
     // Reset state when word changes
     setIsFlipped(false);
@@ -35,15 +44,36 @@ const Flashcards: React.FC = () => {
     // Fetch audio from API
     const getAudio = async () => {
       const data = await fetchWordData(word.word);
+      let url = null;
       if (data && data.phonetics) {
-        const audio = data.phonetics.find(p => p.audio && p.audio.length > 0)?.audio;
-        if (audio) {
-          setAudioUrl(audio);
-        }
+        url = data.phonetics.find(p => p.audio && p.audio.length > 0)?.audio || null;
+      }
+      setAudioUrl(url);
+
+      // Auto play audio
+      if (url) {
+        const audio = new Audio(url);
+        audio.play().catch((_) => {
+          // Fallback to TTS if autoplay blocked or fails
+          playSpeechSynthesis(word.word);
+        });
+      } else {
+        playSpeechSynthesis(word.word);
       }
     };
     getAudio();
   }, [currentIndex, word.word]);
+
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
 
   const playAudio = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -54,7 +84,17 @@ const Flashcards: React.FC = () => {
         audioRef.current.src = audioUrl;
       }
       setIsPlaying(true);
-      audioRef.current.play().finally(() => setIsPlaying(false));
+      audioRef.current.play()
+        .then(() => {
+          setTimeout(() => setIsPlaying(false), 800);
+        })
+        .catch(err => {
+          console.error("Audio playback error, falling back to TTS:", err);
+          playSpeechSynthesis(word.word);
+          setIsPlaying(false);
+        });
+    } else {
+      playSpeechSynthesis(word.word);
     }
   };
 
@@ -105,7 +145,7 @@ const Flashcards: React.FC = () => {
               onClick={playAudio}
               className={`absolute top-6 right-6 p-3 rounded-full transition-colors ${theme === 'dark' ? 'bg-slate-700 text-slate-300 hover:text-white hover:bg-slate-600' : 'bg-slate-100 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50'}`}
             >
-              {audioUrl ? <Volume2 size={24} className={isPlaying ? "animate-pulse" : ""} /> : <VolumeX size={24} className="opacity-50" />}
+              <Volume2 size={24} className={isPlaying ? "animate-pulse" : ""} />
             </button>
 
             <h2 className={`text-5xl font-black mb-6 ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>

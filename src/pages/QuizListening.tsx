@@ -7,12 +7,35 @@ import { Volume2, Loader } from 'lucide-react';
 import { shuffleArray, pickRandomWordWeighted } from '../utils/algorithms';
 
 const QuizListening: React.FC = () => {
-  const { incrementScore, markWordAsLearned, wordsLearned, selectedCategory = 'General' } = useProgress();
+  const { incrementScore, markWordAsLearned, wordsLearned, selectedCategory = 'General', theme } = useProgress();
   const [currentWord, setCurrentWord] = useState<WordItem | null>(null);
   const [options, setOptions] = useState<WordItem[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<'idle' | 'correct' | 'incorrect'>('idle');
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [loadingAudio, setLoadingAudio] = useState(false);
+
+  const playSpeechSynthesis = (text: string) => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US';
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
+  const playAudio = () => {
+    if (audioUrl) {
+      const audio = new Audio(audioUrl);
+      audio.play().catch(err => {
+        console.error("Audio playback error, falling back to TTS:", err);
+        if (currentWord) {
+          playSpeechSynthesis(currentWord.word);
+        }
+      });
+    } else if (currentWord) {
+      playSpeechSynthesis(currentWord.word);
+    }
+  };
 
   const generateQuiz = async () => {
     setSelectedStatus('idle');
@@ -44,32 +67,32 @@ const QuizListening: React.FC = () => {
 
     if (url) {
       const audio = new Audio(url);
-      audio.play().catch((_) => console.log('Audio autoplay prevented'));
+      audio.play().catch((_) => {
+        console.log('Audio autoplay prevented, falling back to TTS');
+        playSpeechSynthesis(target.word);
+      });
     } else {
        // fallback to speech synthesis
        playSpeechSynthesis(target.word);
     }
   };
 
-  const playSpeechSynthesis = (text: string) => {
-    if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'en-US';
-      window.speechSynthesis.speak(utterance);
-    }
-  };
-
-  const playAudio = () => {
-    if (audioUrl) {
-      new Audio(audioUrl).play();
-    } else if (currentWord) {
-      playSpeechSynthesis(currentWord.word);
-    }
-  };
-
   useEffect(() => {
     generateQuiz();
+    return () => {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
   }, []);
+
+  const getTagColor = (category: string) => {
+    if (category.includes('GEPT')) return theme === 'dark' ? 'bg-blue-900/40 text-blue-400' : 'bg-blue-100 text-blue-600';
+    if (category.includes('TOEIC')) return theme === 'dark' ? 'bg-orange-900/40 text-orange-400' : 'bg-orange-100 text-orange-600';
+    if (category.includes('TOEFL')) return theme === 'dark' ? 'bg-purple-900/40 text-purple-400' : 'bg-purple-100 text-purple-600';
+    if (category.includes('Business')) return theme === 'dark' ? 'bg-emerald-900/40 text-emerald-400' : 'bg-emerald-100 text-emerald-600';
+    return theme === 'dark' ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-600';
+  };
 
   const handleSelect = (option: WordItem) => {
     if (selectedStatus !== 'idle' || !currentWord) return;
@@ -88,12 +111,16 @@ const QuizListening: React.FC = () => {
   if (!currentWord) return null;
 
   return (
-    <div className="py-8 flex flex-col items-center h-full max-w-md mx-auto">
-      <h2 className="text-xl font-bold text-slate-700 mb-8">聽單字 (Listening)</h2>
+    <div className="py-8 flex flex-col items-center h-full max-w-md mx-auto px-4">
+      <h2 className="text-xl font-bold text-slate-700 dark:text-slate-200 mb-8">聽單字 (Listening)</h2>
       
       <motion.div 
-        className="glass-panel w-full p-10 flex flex-col items-center justify-center mb-8 bg-gradient-to-br from-purple-500 to-fuchsia-600 shadow-purple-500/30 min-h-[200px]"
+        className="glass-panel w-full p-10 flex flex-col items-center justify-center mb-8 bg-gradient-to-br from-purple-500 to-fuchsia-600 shadow-purple-500/30 min-h-[200px] relative"
       >
+        <span className={`absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-bold ${getTagColor(currentWord.category)}`}>
+          {currentWord.category}
+        </span>
+
         {loadingAudio ? (
           <Loader className="animate-spin text-white w-12 h-12" />
         ) : (
@@ -101,7 +128,7 @@ const QuizListening: React.FC = () => {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={playAudio}
-            className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-md border border-white/40 shadow-xl"
+            className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-md border border-white/40 shadow-xl mt-4"
           >
             <Volume2 className="text-white w-12 h-12" />
           </motion.button>
@@ -120,8 +147,8 @@ const QuizListening: React.FC = () => {
                 selectedStatus === 'correct' && option.id === currentWord.id
                   ? 'bg-green-500 text-white shadow-lg shadow-green-500/40'
                   : selectedStatus === 'incorrect' && option.id !== currentWord.id
-                  ? 'bg-red-50 text-red-500 border border-red-200'
-                  : 'bg-white text-slate-700 shadow-md hover:shadow-lg border border-slate-100'
+                  ? 'bg-red-50 text-red-500 border border-red-200 dark:bg-red-950/30 dark:border-red-900/50'
+                  : 'bg-white text-slate-700 shadow-md hover:shadow-lg border border-slate-100 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-750'
               }`}
             >
               {option.word} <span className="text-sm font-normal opacity-60 ml-2">({option.translation})</span>
@@ -134,7 +161,7 @@ const QuizListening: React.FC = () => {
         <motion.div 
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="mt-6 text-green-600 font-bold text-xl"
+          className="mt-6 text-green-600 dark:text-green-400 font-bold text-xl"
         >
           Perfect Listening! 🎧
         </motion.div>

@@ -14,7 +14,7 @@ declare global {
 }
 
 const QuizSpeaking: React.FC = () => {
-  const { incrementScore, markWordAsLearned, wordsLearned, selectedCategory = 'General' } = useProgress();
+  const { incrementScore, markWordAsLearned, wordsLearned, selectedCategory = 'General', theme } = useProgress();
   const [currentWord, setCurrentWord] = useState<WordItem | null>(null);
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
@@ -131,6 +131,14 @@ const QuizSpeaking: React.FC = () => {
 
   if (!currentWord) return null;
 
+  const getTagColor = (category: string) => {
+    if (category.includes('GEPT')) return theme === 'dark' ? 'bg-blue-900/40 text-blue-400' : 'bg-blue-100 text-blue-600';
+    if (category.includes('TOEIC')) return theme === 'dark' ? 'bg-orange-900/40 text-orange-400' : 'bg-orange-100 text-orange-600';
+    if (category.includes('TOEFL')) return theme === 'dark' ? 'bg-purple-900/40 text-purple-400' : 'bg-purple-100 text-purple-600';
+    if (category.includes('Business')) return theme === 'dark' ? 'bg-emerald-900/40 text-emerald-400' : 'bg-emerald-100 text-emerald-600';
+    return theme === 'dark' ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-600';
+  };
+
   return (
     <div className="py-8 flex flex-col items-center h-full max-w-md mx-auto px-4">
       <h2 className="text-xl font-bold text-slate-700 dark:text-slate-200 mb-8">說單字 (Speaking)</h2>
@@ -139,9 +147,12 @@ const QuizSpeaking: React.FC = () => {
         key={currentWord.id}
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="glass-panel w-full p-10 flex flex-col items-center justify-center mb-8 bg-gradient-to-br from-green-400 to-emerald-600 shadow-green-500/30 text-white min-h-[220px]"
+        className="glass-panel w-full p-10 flex flex-col items-center justify-center mb-8 bg-gradient-to-br from-green-400 to-emerald-600 shadow-green-500/30 text-white min-h-[220px] relative"
       >
-        <span className="text-4xl font-black tracking-wider mb-2">{currentWord.word}</span>
+        <span className={`absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-bold ${getTagColor(currentWord.category)}`}>
+          {currentWord.category}
+        </span>
+        <span className="text-4xl font-black tracking-wider mb-2 mt-4">{currentWord.word}</span>
         <span className="text-lg opacity-80">{currentWord.translation}</span>
       </motion.div>
 

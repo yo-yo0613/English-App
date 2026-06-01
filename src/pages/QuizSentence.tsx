@@ -5,7 +5,7 @@ import { useProgress } from '../hooks/useProgress';
 import { shuffleArray, pickRandomWordWeighted } from '../utils/algorithms';
 
 const QuizSentence: React.FC = () => {
-  const { incrementScore, markWordAsLearned, wordsLearned, selectedCategory = 'General' } = useProgress();
+  const { incrementScore, markWordAsLearned, wordsLearned, selectedCategory = 'General', theme } = useProgress();
   const [currentWord, setCurrentWord] = useState<WordItem | null>(null);
   const [options, setOptions] = useState<string[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<'idle' | 'correct' | 'incorrect'>('idle');
@@ -59,17 +59,28 @@ const QuizSentence: React.FC = () => {
 
   if (!currentWord) return null;
 
+  const getTagColor = (category: string) => {
+    if (category.includes('GEPT')) return theme === 'dark' ? 'bg-blue-900/40 text-blue-400' : 'bg-blue-100 text-blue-600';
+    if (category.includes('TOEIC')) return theme === 'dark' ? 'bg-orange-900/40 text-orange-400' : 'bg-orange-100 text-orange-600';
+    if (category.includes('TOEFL')) return theme === 'dark' ? 'bg-purple-900/40 text-purple-400' : 'bg-purple-100 text-purple-600';
+    if (category.includes('Business')) return theme === 'dark' ? 'bg-emerald-900/40 text-emerald-400' : 'bg-emerald-100 text-emerald-600';
+    return theme === 'dark' ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-600';
+  };
+
   return (
-    <div className="py-8 flex flex-col items-center h-full max-w-md mx-auto">
+    <div className="py-8 flex flex-col items-center h-full max-w-md mx-auto px-4">
       <h2 className="text-xl font-bold text-slate-700 dark:text-slate-200 mb-8">配對句子 (Sentence Matching)</h2>
       
       <motion.div 
         key={currentWord.id}
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="glass-panel w-full p-8 flex flex-col items-center justify-center mb-8 bg-gradient-to-br from-teal-500 to-cyan-600 shadow-teal-500/30 min-h-[200px]"
+        className="glass-panel w-full p-8 flex flex-col items-center justify-center mb-8 bg-gradient-to-br from-teal-500 to-cyan-600 shadow-teal-500/30 min-h-[200px] relative"
       >
-        <div className="text-white text-lg opacity-80 uppercase tracking-widest mb-4">
+        <span className={`absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-bold ${getTagColor(currentWord.category)}`}>
+          {currentWord.category}
+        </span>
+        <div className="text-white text-lg opacity-80 uppercase tracking-widest mb-4 mt-4">
           Fill in the blank
         </div>
         <div className="text-2xl font-medium text-white text-center leading-relaxed">

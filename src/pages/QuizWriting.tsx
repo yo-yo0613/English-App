@@ -2,19 +2,58 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { defaultWordList, type WordItem } from '../data/wordList';
 import { useProgress } from '../hooks/useProgress';
-import { Check, X } from 'lucide-react';
+import { Check, X, Volume2, Loader } from 'lucide-react';
 import { pickRandomWordWeighted } from '../utils/algorithms';
+import { fetchWordData } from '../services/dictionaryApi';
 
 const QuizWriting: React.FC = () => {
-  const { incrementScore, markWordAsLearned, wordsLearned, selectedCategory = 'General' } = useProgress();
+  const { incrementScore, markWordAsLearned, wordsLearned, selectedCategory = 'General', theme } = useProgress();
   const [currentWord, setCurrentWord] = useState<WordItem | null>(null);
   const [input, setInput] = useState('');
   const [status, setStatus] = useState<'idle' | 'correct' | 'incorrect'>('idle');
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [loadingAudio, setLoadingAudio] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const generateQuiz = () => {
+  const playSpeechSynthesis = (text: string) => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US';
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
+  const playAudio = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (audioUrl) {
+      if (!audioRef.current) {
+        audioRef.current = new Audio(audioUrl);
+      } else {
+        audioRef.current.src = audioUrl;
+      }
+      setIsPlaying(true);
+      audioRef.current.play()
+        .then(() => {
+          setTimeout(() => setIsPlaying(false), 800);
+        })
+        .catch(err => {
+          console.error("Audio error, falling back to TTS:", err);
+          playSpeechSynthesis(currentWord?.word || '');
+          setIsPlaying(false);
+        });
+    } else if (currentWord) {
+      playSpeechSynthesis(currentWord.word);
+    }
+  };
+
+  const generateQuiz = async () => {
     setStatus('idle');
     setInput('');
+    setAudioUrl(null);
+    setLoadingAudio(true);
     
     const wordsSource = selectedCategory === 'General' || selectedCategory === 'All' 
       ? defaultWordList 
@@ -23,13 +62,43 @@ const QuizWriting: React.FC = () => {
     const activeWordList = wordsSource.length > 0 ? wordsSource : defaultWordList;
     const target = pickRandomWordWeighted(activeWordList, wordsLearned);
     setCurrentWord(target);
+    
+    // Fetch audio from Dictionary API
+    const data = await fetchWordData(target.word);
+    let url = null;
+    if (data && data.phonetics) {
+      const phoneticWithAudio = data.phonetics.find(p => p.audio && p.audio.length > 0);
+      if (phoneticWithAudio) url = phoneticWithAudio.audio || null;
+    }
+    setAudioUrl(url);
+    setLoadingAudio(false);
+
+    // Auto play audio
+    if (url) {
+      const audio = new Audio(url);
+      audio.play().catch((_) => {
+        // Fallback to TTS if autoplay blocked or fails
+        playSpeechSynthesis(target.word);
+      });
+    } else {
+      playSpeechSynthesis(target.word);
+    }
+
     setTimeout(() => {
       inputRef.current?.focus();
-    }, 100);
+    }, 200);
   };
 
   useEffect(() => {
     generateQuiz();
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
   }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -40,7 +109,8 @@ const QuizWriting: React.FC = () => {
       setStatus('correct');
       incrementScore(20);
       markWordAsLearned(currentWord.id, 'writing');
-      setTimeout(generateQuiz, 1500);
+      playAudio();
+      setTimeout(generateQuiz, 1800);
     } else {
       setStatus('incorrect');
       setTimeout(() => {
@@ -53,17 +123,41 @@ const QuizWriting: React.FC = () => {
 
   if (!currentWord) return null;
 
+  const getTagColor = (category: string) => {
+    if (category.includes('GEPT')) return theme === 'dark' ? 'bg-blue-900/40 text-blue-400' : 'bg-blue-100 text-blue-600';
+    if (category.includes('TOEIC')) return theme === 'dark' ? 'bg-orange-900/40 text-orange-400' : 'bg-orange-100 text-orange-600';
+    if (category.includes('TOEFL')) return theme === 'dark' ? 'bg-purple-900/40 text-purple-400' : 'bg-purple-100 text-purple-600';
+    if (category.includes('Business')) return theme === 'dark' ? 'bg-emerald-900/40 text-emerald-400' : 'bg-emerald-100 text-emerald-600';
+    return theme === 'dark' ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-600';
+  };
+
   return (
-    <div className="py-8 flex flex-col items-center h-full max-w-md mx-auto">
-      <h2 className="text-xl font-bold text-slate-700 mb-8">拼寫單字 (Writing)</h2>
+    <div className="py-8 flex flex-col items-center h-full max-w-md mx-auto px-4">
+      <h2 className="text-xl font-bold text-slate-700 dark:text-slate-200 mb-8">拼寫單字 (Writing)</h2>
       
       <motion.div 
         key={currentWord.id}
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="glass-panel w-full p-8 flex flex-col items-center justify-center mb-8 bg-gradient-to-br from-orange-400 to-red-500 shadow-orange-500/30 text-white"
+        className="glass-panel w-full p-8 flex flex-col items-center justify-center mb-8 bg-gradient-to-br from-orange-400 to-red-500 shadow-orange-500/30 text-white relative min-h-[160px]"
       >
-        <span className="text-sm font-medium opacity-80 uppercase tracking-widest mb-2">Translate to English</span>
+        <span className={`absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-bold ${getTagColor(currentWord.category)}`}>
+          {currentWord.category}
+        </span>
+
+        <button 
+          type="button"
+          onClick={() => playAudio()}
+          className="absolute top-4 right-4 p-2.5 bg-white/20 hover:bg-white/35 rounded-full text-white backdrop-blur-sm border border-white/25 transition-all shadow-md active:scale-95 flex items-center justify-center"
+        >
+          {loadingAudio ? (
+            <Loader size={18} className="animate-spin text-white" />
+          ) : (
+            <Volume2 size={18} className={isPlaying ? "animate-pulse" : ""} />
+          )}
+        </button>
+
+        <span className="text-sm font-medium opacity-80 uppercase tracking-widest mb-2 mt-4">Translate to English</span>
         <span className="text-4xl font-black">{currentWord.translation}</span>
       </motion.div>
 
@@ -85,7 +179,7 @@ const QuizWriting: React.FC = () => {
                 ? 'bg-green-50 border-2 border-green-500 text-green-700'
                 : status === 'incorrect'
                 ? 'bg-red-50 border-2 border-red-500 text-red-700'
-                : 'bg-white border-2 border-slate-200 focus:border-orange-500 text-slate-800 shadow-md'
+                : 'bg-white border-2 border-slate-200 focus:border-orange-500 text-slate-800 shadow-md dark:bg-slate-850 dark:border-slate-700 dark:text-white dark:focus:border-orange-500'
             }`}
           />
           <AnimatePresence>
