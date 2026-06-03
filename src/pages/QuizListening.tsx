@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { defaultWordList, type WordItem } from '../data/wordList';
+import { type WordItem } from '../data/wordList';
 import { useProgress } from '../hooks/useProgress';
+import { useWordList } from '../hooks/useWordList';
 import { fetchWordData } from '../services/dictionaryApi';
 import { Volume2, Loader } from 'lucide-react';
 import { shuffleArray, pickRandomWordWeighted } from '../utils/algorithms';
 
 const QuizListening: React.FC = () => {
   const { incrementScore, markWordAsLearned, wordsLearned, selectedCategory = 'General', theme } = useProgress();
+  const { wordList } = useWordList();
   const [currentWord, setCurrentWord] = useState<WordItem | null>(null);
   const [options, setOptions] = useState<WordItem[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<'idle' | 'correct' | 'incorrect'>('idle');
@@ -43,10 +45,10 @@ const QuizListening: React.FC = () => {
     setLoadingAudio(true);
 
     const wordsSource = selectedCategory === 'General' || selectedCategory === 'All' 
-      ? defaultWordList 
-      : defaultWordList.filter(w => w.category === selectedCategory);
+      ? wordList 
+      : wordList.filter(w => w.category === selectedCategory);
     
-    const activeWordList = wordsSource.length > 0 ? wordsSource : defaultWordList;
+    const activeWordList = wordsSource.length > 0 ? wordsSource : wordList;
     const target = pickRandomWordWeighted(activeWordList, wordsLearned);
     setCurrentWord(target);
     

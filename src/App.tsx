@@ -12,14 +12,17 @@ import Settings from './pages/Settings';
 import Auth from './pages/Auth';
 import { useProgress } from './hooks/useProgress';
 import { useAuth } from './hooks/useAuth';
+import { useWordList } from './hooks/useWordList';
 
 function App() {
   const { theme, syncWithSupabase } = useProgress();
   const { session, isLoading, initialize } = useAuth();
+  const { fetchSupabaseWords } = useWordList();
 
   useEffect(() => {
     initialize();
-  }, [initialize]);
+    fetchSupabaseWords();
+  }, [initialize, fetchSupabaseWords]);
 
   useEffect(() => {
     if (session?.user) {

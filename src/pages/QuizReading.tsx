@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { defaultWordList, type WordItem } from '../data/wordList';
+import { type WordItem } from '../data/wordList';
 import { useProgress } from '../hooks/useProgress';
+import { useWordList } from '../hooks/useWordList';
 
 import { shuffleArray, pickRandomWordWeighted } from '../utils/algorithms';
 
 const QuizReading: React.FC = () => {
   const { incrementScore, markWordAsLearned, wordsLearned, theme, score, selectedCategory = 'General' } = useProgress();
+  const { wordList } = useWordList();
   const [currentWord, setCurrentWord] = useState<WordItem | null>(null);
   const [options, setOptions] = useState<WordItem[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<'idle' | 'correct' | 'incorrect'>('idle');
@@ -15,10 +17,10 @@ const QuizReading: React.FC = () => {
     setSelectedStatus('idle');
     
     const wordsSource = selectedCategory === 'General' || selectedCategory === 'All' 
-      ? defaultWordList 
-      : defaultWordList.filter(w => w.category === selectedCategory);
+      ? wordList 
+      : wordList.filter(w => w.category === selectedCategory);
     
-    const activeWordList = wordsSource.length > 0 ? wordsSource : defaultWordList;
+    const activeWordList = wordsSource.length > 0 ? wordsSource : wordList;
     const target = pickRandomWordWeighted(activeWordList, wordsLearned);
     setCurrentWord(target);
     

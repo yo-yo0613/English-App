@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, } from 'framer-motion';
 import { useProgress } from '../hooks/useProgress';
-import { defaultWordList } from '../data/wordList';
+import { useWordList } from '../hooks/useWordList';
 import { fetchWordData } from '../services/dictionaryApi';
 import { Volume2, ArrowRight, ArrowLeft, RefreshCw } from 'lucide-react';
 
 const Flashcards: React.FC = () => {
   const { theme, markWordAsLearned, selectedCategory = 'General' } = useProgress();
+  const { wordList } = useWordList();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
@@ -15,17 +16,17 @@ const Flashcards: React.FC = () => {
 
   const filteredWords = React.useMemo(() => {
     if (selectedCategory === 'General' || selectedCategory === 'All') {
-      return defaultWordList;
+      return wordList;
     }
-    const filtered = defaultWordList.filter(w => w.category === selectedCategory);
-    return filtered.length > 0 ? filtered : defaultWordList;
-  }, [selectedCategory]);
+    const filtered = wordList.filter(w => w.category === selectedCategory);
+    return filtered.length > 0 ? filtered : wordList;
+  }, [selectedCategory, wordList]);
 
   useEffect(() => {
     setCurrentIndex(0);
   }, [selectedCategory]);
 
-  const word = filteredWords[currentIndex] || filteredWords[0] || defaultWordList[0];
+  const word = filteredWords[currentIndex] || filteredWords[0] || wordList[0];
 
   const playSpeechSynthesis = (text: string) => {
     if ('speechSynthesis' in window) {
