@@ -7,11 +7,13 @@ import { useWordList } from '../hooks/useWordList';
 import { shuffleArray, pickRandomWordWeighted } from '../utils/algorithms';
 
 const QuizReading: React.FC = () => {
-  const { incrementScore, markWordAsLearned, wordsLearned, theme, score, selectedCategory = 'General' } = useProgress();
+  const { incrementScore, markWordAsLearned, theme, score, selectedCategory = 'General', selectedLevels = {}, wordProficiency = {}, markWordAsIncorrect } = useProgress();
   const { wordList } = useWordList();
   const [currentWord, setCurrentWord] = useState<WordItem | null>(null);
   const [options, setOptions] = useState<WordItem[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<'idle' | 'correct' | 'incorrect'>('idle');
+
+  const activeLevel = selectedLevels[selectedCategory] || 1;
 
   const generateQuiz = () => {
     setSelectedStatus('idle');
@@ -21,7 +23,12 @@ const QuizReading: React.FC = () => {
       : wordList.filter(w => w.category === selectedCategory);
     
     const activeWordList = wordsSource.length > 0 ? wordsSource : wordList;
-    const target = pickRandomWordWeighted(activeWordList, wordsLearned);
+    
+    const startIdx = (activeLevel - 1) * 20;
+    const wordsInLevel = activeWordList.slice(startIdx, startIdx + 20);
+    const levelWords = wordsInLevel.length > 0 ? wordsInLevel : activeWordList.slice(0, 20);
+
+    const target = pickRandomWordWeighted(levelWords, wordProficiency);
     setCurrentWord(target);
     
     // Pick 3 random wrong options using Fisher-Yates shuffle
@@ -44,6 +51,7 @@ const QuizReading: React.FC = () => {
       setTimeout(generateQuiz, 1500);
     } else {
       setSelectedStatus('incorrect');
+      markWordAsIncorrect(currentWord.id);
       setTimeout(() => setSelectedStatus('idle'), 1000);
     }
   };

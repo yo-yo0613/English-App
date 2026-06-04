@@ -8,13 +8,15 @@ import { Volume2, Loader } from 'lucide-react';
 import { shuffleArray, pickRandomWordWeighted } from '../utils/algorithms';
 
 const QuizListening: React.FC = () => {
-  const { incrementScore, markWordAsLearned, wordsLearned, selectedCategory = 'General', theme } = useProgress();
+  const { incrementScore, markWordAsLearned, selectedCategory = 'General', theme, selectedLevels = {}, wordProficiency = {}, markWordAsIncorrect } = useProgress();
   const { wordList } = useWordList();
   const [currentWord, setCurrentWord] = useState<WordItem | null>(null);
   const [options, setOptions] = useState<WordItem[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<'idle' | 'correct' | 'incorrect'>('idle');
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [loadingAudio, setLoadingAudio] = useState(false);
+
+  const activeLevel = selectedLevels[selectedCategory] || 1;
 
   const playSpeechSynthesis = (text: string) => {
     if ('speechSynthesis' in window) {
@@ -49,7 +51,12 @@ const QuizListening: React.FC = () => {
       : wordList.filter(w => w.category === selectedCategory);
     
     const activeWordList = wordsSource.length > 0 ? wordsSource : wordList;
-    const target = pickRandomWordWeighted(activeWordList, wordsLearned);
+
+    const startIdx = (activeLevel - 1) * 20;
+    const wordsInLevel = activeWordList.slice(startIdx, startIdx + 20);
+    const levelWords = wordsInLevel.length > 0 ? wordsInLevel : activeWordList.slice(0, 20);
+
+    const target = pickRandomWordWeighted(levelWords, wordProficiency);
     setCurrentWord(target);
     
     // Fetch audio from Dictionary API
@@ -74,8 +81,8 @@ const QuizListening: React.FC = () => {
         playSpeechSynthesis(target.word);
       });
     } else {
-       // fallback to speech synthesis
-       playSpeechSynthesis(target.word);
+      // fallback to speech synthesis
+      playSpeechSynthesis(target.word);
     }
   };
 
@@ -106,6 +113,7 @@ const QuizListening: React.FC = () => {
       setTimeout(generateQuiz, 1500);
     } else {
       setSelectedStatus('incorrect');
+      markWordAsIncorrect(currentWord.id);
       setTimeout(() => setSelectedStatus('idle'), 1000);
     }
   };

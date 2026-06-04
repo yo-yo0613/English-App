@@ -15,17 +15,26 @@ export function shuffleArray<T>(array: T[]): T[] {
 }
 
 /**
- * Weighted Random Picker (Concept similar to Weighted Binary Search Tree)
- * O(N) to build, O(log N) to search if using a real BST, but O(N) prefix sum array is practically 
- * instant for client-side vocabulary sizes up to 100k words.
+ * Weighted Random Picker for Spaced Repetition Lite
+ * O(N) prefix sum array build, O(log N) binary search query.
  * 
- * We give higher weight to words that haven't been learned yet, or those with lower accuracy.
+ * We give weights based on the word's proficiency score:
+ * - 0 proficiency (unlearned or just failed): 15x weight (highest priority)
+ * - 1 proficiency (familiar): 8x weight
+ * - 2 proficiency (improving): 4x weight
+ * - >= 3 proficiency (mastered): 1x weight (still queried occasionally)
  */
-export function pickRandomWordWeighted(words: WordItem[], learnedIds: string[]): WordItem {
+export function pickRandomWordWeighted(words: WordItem[], wordProficiency: Record<string, number>): WordItem {
   if (words.length === 0) throw new Error("Word list is empty");
   
-  // Assign weights: unlearned = 10, learned = 1
-  const weights = words.map(w => learnedIds.includes(w.id) ? 1 : 10);
+  // Assign weights based on proficiency levels
+  const weights = words.map(w => {
+    const prof = wordProficiency[w.id] || 0;
+    if (prof === 0) return 15;
+    if (prof === 1) return 8;
+    if (prof === 2) return 4;
+    return 1; // Mastered (>= 3)
+  });
   
   // Create prefix sum array
   const prefixSums: number[] = [];

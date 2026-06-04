@@ -8,7 +8,7 @@ import { pickRandomWordWeighted } from '../utils/algorithms';
 import { fetchWordData } from '../services/dictionaryApi';
 
 const QuizWriting: React.FC = () => {
-  const { incrementScore, markWordAsLearned, wordsLearned, selectedCategory = 'General', theme } = useProgress();
+  const { incrementScore, markWordAsLearned, selectedCategory = 'General', theme, selectedLevels = {}, wordProficiency = {}, markWordAsIncorrect } = useProgress();
   const { wordList } = useWordList();
   const [currentWord, setCurrentWord] = useState<WordItem | null>(null);
   const [input, setInput] = useState('');
@@ -18,6 +18,8 @@ const QuizWriting: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const activeLevel = selectedLevels[selectedCategory] || 1;
 
   const playSpeechSynthesis = (text: string) => {
     if ('speechSynthesis' in window) {
@@ -62,7 +64,12 @@ const QuizWriting: React.FC = () => {
       : wordList.filter(w => w.category === selectedCategory);
     
     const activeWordList = wordsSource.length > 0 ? wordsSource : wordList;
-    const target = pickRandomWordWeighted(activeWordList, wordsLearned);
+
+    const startIdx = (activeLevel - 1) * 20;
+    const wordsInLevel = activeWordList.slice(startIdx, startIdx + 20);
+    const levelWords = wordsInLevel.length > 0 ? wordsInLevel : activeWordList.slice(0, 20);
+
+    const target = pickRandomWordWeighted(levelWords, wordProficiency);
     setCurrentWord(target);
     
     // Fetch audio from Dictionary API
@@ -115,6 +122,7 @@ const QuizWriting: React.FC = () => {
       setTimeout(generateQuiz, 1800);
     } else {
       setStatus('incorrect');
+      markWordAsIncorrect(currentWord.id);
       setTimeout(() => {
         setStatus('idle');
         setInput('');

@@ -6,12 +6,14 @@ import { useWordList } from '../hooks/useWordList';
 import { shuffleArray, pickRandomWordWeighted } from '../utils/algorithms';
 
 const QuizSentence: React.FC = () => {
-  const { incrementScore, markWordAsLearned, wordsLearned, selectedCategory = 'General', theme } = useProgress();
+  const { incrementScore, markWordAsLearned, selectedCategory = 'General', theme, selectedLevels = {}, wordProficiency = {}, markWordAsIncorrect } = useProgress();
   const { wordList } = useWordList();
   const [currentWord, setCurrentWord] = useState<WordItem | null>(null);
   const [options, setOptions] = useState<string[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<'idle' | 'correct' | 'incorrect'>('idle');
   const [sentenceParts, setSentenceParts] = useState<{ before: string, after: string }>({ before: '', after: '' });
+
+  const activeLevel = selectedLevels[selectedCategory] || 1;
 
   const generateQuiz = () => {
     setSelectedStatus('idle');
@@ -21,7 +23,17 @@ const QuizSentence: React.FC = () => {
       : wordList.filter(w => w.category === selectedCategory);
     
     const activeWordList = wordsSource.length > 0 ? wordsSource : wordList;
-    const target = pickRandomWordWeighted(activeWordList.filter(w => w.example), wordsLearned);
+
+    const startIdx = (activeLevel - 1) * 20;
+    const wordsInLevel = activeWordList.slice(startIdx, startIdx + 20);
+    const levelWords = wordsInLevel.length > 0 ? wordsInLevel : activeWordList.slice(0, 20);
+
+    // Filter words in level to only those containing an example sentence
+    const wordsWithExample = levelWords.filter(w => w.example);
+    // Fallback to active list if no example found in chunk
+    const searchPool = wordsWithExample.length > 0 ? wordsWithExample : activeWordList.filter(w => w.example);
+
+    const target = pickRandomWordWeighted(searchPool, wordProficiency);
     setCurrentWord(target);
     
     // Split the example sentence around the word (case insensitive)
@@ -34,7 +46,7 @@ const QuizSentence: React.FC = () => {
       setSentenceParts({ before: target.example + ' (', after: ')' });
     }
 
-    // Pick 3 random wrong options
+    // Pick 3 random wrong options from activeWordList
     const wrongOptions = shuffleArray(activeWordList.filter(w => w.id !== target.id)).slice(0, 3).map(w => w.word);
     const allOptions = shuffleArray([...wrongOptions, target.word]);
     setOptions(allOptions);
@@ -50,11 +62,11 @@ const QuizSentence: React.FC = () => {
     if (option === currentWord.word) {
       setSelectedStatus('correct');
       incrementScore(30);
-      // We categorize this under 'sentence' for progress tracking
       markWordAsLearned(currentWord.id, 'sentence');
       setTimeout(generateQuiz, 2000);
     } else {
       setSelectedStatus('incorrect');
+      markWordAsIncorrect(currentWord.id);
       setTimeout(() => setSelectedStatus('idle'), 1000);
     }
   };

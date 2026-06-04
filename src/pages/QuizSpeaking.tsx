@@ -15,7 +15,7 @@ declare global {
 }
 
 const QuizSpeaking: React.FC = () => {
-  const { incrementScore, markWordAsLearned, wordsLearned, selectedCategory = 'General', theme } = useProgress();
+  const { incrementScore, markWordAsLearned, selectedCategory = 'General', theme, selectedLevels = {}, wordProficiency = {}, markWordAsIncorrect } = useProgress();
   const { wordList } = useWordList();
   const [currentWord, setCurrentWord] = useState<WordItem | null>(null);
   const [isListening, setIsListening] = useState(false);
@@ -28,6 +28,8 @@ const QuizSpeaking: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   
   const recognitionRef = useRef<any>(null);
+
+  const activeLevel = selectedLevels[selectedCategory] || 1;
 
   const playSpeechSynthesis = (text: string) => {
     if ('speechSynthesis' in window) {
@@ -51,7 +53,12 @@ const QuizSpeaking: React.FC = () => {
       : wordList.filter(w => w.category === selectedCategory);
     
     const activeWordList = wordsSource.length > 0 ? wordsSource : wordList;
-    const target = pickRandomWordWeighted(activeWordList, wordsLearned);
+
+    const startIdx = (activeLevel - 1) * 20;
+    const wordsInLevel = activeWordList.slice(startIdx, startIdx + 20);
+    const levelWords = wordsInLevel.length > 0 ? wordsInLevel : activeWordList.slice(0, 20);
+
+    const target = pickRandomWordWeighted(levelWords, wordProficiency);
     setCurrentWord(target);
 
     // Auto-play the English pronunciation so the user hears how it's said
@@ -137,6 +144,7 @@ const QuizSpeaking: React.FC = () => {
       setTimeout(generateQuiz, 2000);
     } else {
       setStatus('incorrect');
+      markWordAsIncorrect(currentWord.id);
       setTimeout(() => {
         setStatus('idle');
         setTranscript('');

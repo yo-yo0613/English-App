@@ -6,6 +6,8 @@ export interface ProgressState {
   score: number;
   wordsLearned: string[];
   selectedCategory: string;
+  selectedLevels: Record<string, number>; // key: category, value: level
+  wordProficiency: Record<string, number>; // key: wordId, value: proficiency (0-5)
   
   // Daily goals
   dailyGoal: number;
@@ -29,10 +31,12 @@ export interface ProgressState {
   // Actions
   incrementScore: (points: number) => void;
   markWordAsLearned: (wordId: string, type: 'listening' | 'speaking' | 'reading' | 'writing' | 'flashcards' | 'sentence') => void;
+  markWordAsIncorrect: (wordId: string) => void;
   setDailyGoal: (goal: number) => void;
   setNotificationTime: (time: string) => void;
   setTheme: (theme: 'light' | 'dark') => void;
   setSelectedCategory: (category: string) => void;
+  setSelectedLevel: (category: string, level: number) => void;
   resetProgress: () => void;
   syncWithSupabase: (userId: string) => Promise<void>;
 }
@@ -45,6 +49,8 @@ export const useProgress = create<ProgressState>()(
       score: 0,
       wordsLearned: [],
       selectedCategory: 'General',
+      selectedLevels: {},
+      wordProficiency: {},
       dailyGoal: 200,
       dailyProgress: {
         listening: 0,
@@ -92,6 +98,17 @@ export const useProgress = create<ProgressState>()(
           ? state.wordsLearned 
           : [...state.wordsLearned, wordId];
 
+        // Spaced Repetition Lite: update proficiency
+        const newWordProficiency = { ...state.wordProficiency };
+        const currentProf = newWordProficiency[wordId] || 0;
+        if (type === 'flashcards') {
+          // Flashcards introduce the word, setting it to 1, but doesn't max it out
+          newWordProficiency[wordId] = Math.max(currentProf, 1);
+        } else {
+          // Quizzes test recall, incrementing up to 5
+          newWordProficiency[wordId] = Math.min(currentProf + 1, 5);
+        }
+
         // Update history
         const newHistory = { ...state.history };
         newHistory[today] = (newHistory[today] || 0) + 1;
@@ -100,17 +117,34 @@ export const useProgress = create<ProgressState>()(
           wordsLearned: newWordsLearned,
           dailyProgress: newDailyProgress,
           history: newHistory,
+          wordProficiency: newWordProficiency,
         };
+      }),
+
+      markWordAsIncorrect: (wordId) => set((state) => {
+        const newWordProficiency = { ...state.wordProficiency };
+        // Reset to 0 (spaced repetition penalty)
+        newWordProficiency[wordId] = 0;
+        return { wordProficiency: newWordProficiency };
       }),
 
       setDailyGoal: (goal) => set({ dailyGoal: goal }),
       setNotificationTime: (time) => set({ notificationTime: time }),
       setTheme: (theme) => set({ theme }),
       setSelectedCategory: (category) => set({ selectedCategory: category }),
+      
+      setSelectedLevel: (category, level) => set((state) => {
+        const newSelectedLevels = { ...state.selectedLevels };
+        newSelectedLevels[category] = level;
+        return { selectedLevels: newSelectedLevels };
+      }),
+
       resetProgress: () => set({ 
         score: 0, 
         wordsLearned: [], 
         selectedCategory: 'General',
+        selectedLevels: {},
+        wordProficiency: {},
         dailyProgress: {
           listening: 0, speaking: 0, reading: 0, writing: 0, flashcards: 0, sentence: 0, lastUpdated: getTodayDateString()
         },

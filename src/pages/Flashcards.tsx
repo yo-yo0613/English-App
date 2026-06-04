@@ -6,7 +6,7 @@ import { fetchWordData } from '../services/dictionaryApi';
 import { Volume2, ArrowRight, ArrowLeft, RefreshCw } from 'lucide-react';
 
 const Flashcards: React.FC = () => {
-  const { theme, markWordAsLearned, selectedCategory = 'General' } = useProgress();
+  const { theme, markWordAsLearned, selectedCategory = 'General', selectedLevels = {} } = useProgress();
   const { wordList } = useWordList();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
@@ -14,17 +14,24 @@ const Flashcards: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  const activeLevel = selectedLevels[selectedCategory] || 1;
+
   const filteredWords = React.useMemo(() => {
-    if (selectedCategory === 'General' || selectedCategory === 'All') {
-      return wordList;
-    }
-    const filtered = wordList.filter(w => w.category === selectedCategory);
-    return filtered.length > 0 ? filtered : wordList;
-  }, [selectedCategory, wordList]);
+    const categoryWords = selectedCategory === 'General' || selectedCategory === 'All'
+      ? wordList
+      : wordList.filter(w => w.category === selectedCategory);
+
+    const activeList = categoryWords.length > 0 ? categoryWords : wordList;
+    
+    const startIdx = (activeLevel - 1) * 20;
+    const levelWords = activeList.slice(startIdx, startIdx + 20);
+    
+    return levelWords.length > 0 ? levelWords : activeList.slice(0, 20);
+  }, [selectedCategory, wordList, activeLevel]);
 
   useEffect(() => {
     setCurrentIndex(0);
-  }, [selectedCategory]);
+  }, [selectedCategory, activeLevel]);
 
   const word = filteredWords[currentIndex] || filteredWords[0] || wordList[0];
 
