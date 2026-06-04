@@ -110,8 +110,11 @@ const Home: React.FC = () => {
               const startIdx = idx * 20;
               const levelWords = filteredCategoryWords.slice(startIdx, startIdx + 20);
               
+              // Count words in this level that have been started (proficiency >= 1)
+              const startedCount = levelWords.filter(w => (wordProficiency[w.id] || 0) >= 1).length;
               // Count words in this level that are mastered (proficiency >= 3)
               const masteredCount = levelWords.filter(w => (wordProficiency[w.id] || 0) >= 3).length;
+              
               const isCurrent = activeLevel === levelNum;
               const isCompleted = masteredCount === levelWords.length && levelWords.length > 0;
               
@@ -128,7 +131,7 @@ const Home: React.FC = () => {
                   }`}
                 >
                   <span className="text-sm font-black">L{levelNum}</span>
-                  <span className="text-[10px] opacity-75 mt-0.5">{masteredCount}/{levelWords.length}</span>
+                  <span className="text-[10px] opacity-75 mt-0.5">{startedCount}/{levelWords.length}</span>
                   {isCompleted && (
                     <span className="absolute -top-1.5 -right-1.5 bg-amber-500 text-white rounded-full p-0.5 shadow-sm flex items-center justify-center">
                       <Check size={8} strokeWidth={4} />
